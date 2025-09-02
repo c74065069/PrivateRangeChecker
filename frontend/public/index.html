@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+  <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+  <title>🔒 ZAMA · Private Range Check</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f7f8fc;
+      --bg-2:#eef1f7;
+      --surface:#ffffff;
+      --stroke:#e6e9f2;
+      --muted:#6b7488;
+      --text:#1f2430;
+      --primary:#13b38b;  /* teal */
+      --primary-2:#ff7a59; /* coral */
+      --accent:#5a7cff;   /* indigo */
+      --ok:#0ea573;
+      --danger:#e24d4d;
+      --shadow:0 10px 30px rgba(31,36,48,.08);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text);
+      background:
+        radial-gradient(1000px 700px at -10% -10%, var(--bg-2), transparent 60%),
+        radial-gradient(900px 700px at 110% 10%, #ffe9e2, transparent 60%),
+        linear-gradient(180deg, var(--bg), #ffffff);
+    }
+
+    /* LAYOUT */
+    .layout{display:grid;grid-template-columns:300px 1fr;min-height:100vh}
+    @media (max-width: 1024px){.layout{grid-template-columns:1fr}}
+
+    .sidebar{background:linear-gradient(180deg,#ffffff, var(--bg)); border-right:1px solid var(--stroke); padding:22px; position:sticky; top:0; height:100vh; overflow:auto}
+    @media (max-width: 1024px){.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--stroke)}}
+
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    .logo{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#083b2f;background:linear-gradient(135deg,#bff3e6,#7fe7cf); box-shadow:var(--shadow)}
+    .brand h1{margin:0;font-size:20px;font-weight:800;letter-spacing:.2px}
+    .brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+
+    .sidecard{background:var(--surface);border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow); padding:14px; margin-bottom:14px}
+    .sidecard h3{margin:0 0 10px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row-1{display:grid;grid-template-columns:1fr;gap:10px}
+
+    label{display:block;font-size:11px;color:var(--muted);margin:6px 4px}
+    input[type="text"],input[type="number"]{width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--stroke);background:#fff;color:var(--text);box-shadow:0 2px 0 rgba(0,0,0,.02) inset;outline:none;font-size:14px}
+    input:focus{border-color:#b7c5ff; box-shadow:0 0 0 3px rgba(90,124,255,.12)}
+
+    .btn{appearance:none;border:0;cursor:pointer;padding:12px 14px;border-radius:12px;font-weight:800;letter-spacing:.2px;box-shadow:var(--shadow);transition:transform .12s ease, filter .15s ease}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .btn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.03)}
+    .btn.primary{background:linear-gradient(135deg,#7fe7cf,#13b38b);color:#062a22}
+    .btn.accent{background:linear-gradient(135deg,#8ea2ff,#5a7cff);color:white}
+    .btn.coral{background:linear-gradient(135deg,#ffc1b1,#ff7a59);color:#3d160f}
+    .btn.ghost{background:#fff;border:1px solid var(--stroke);}
+    .btn.block{width:100%}
+
+    .content{padding:28px 28px 60px}
+    .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .hero-title{margin:0;font-size:28px;font-weight:900;letter-spacing:.2px}
+    .hero-sub{margin:0;color:var(--muted)}
+
+    .panels{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+    @media (max-width: 980px){.panels{grid-template-columns:1fr}}
+
+    .panel{background:var(--surface);border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+
+    .tabs{display:flex;gap:8px;margin-bottom:10px}
+    .tab{flex:1;padding:10px;border-radius:10px;border:1px solid var(--stroke);background:#fff;color:var(--muted);font-weight:800;cursor:pointer}
+    .tab.active{background:linear-gradient(135deg,#eaf2ff,#ffffff);color:#223; border-color:#cfd9ff}
+
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:680px){.grid-2{grid-template-columns:1fr}}
+
+    .status{margin-top:12px;padding:12px;border:1px dashed var(--stroke);border-radius:12px;background:#fff;color:var(--muted);font-weight:700}
+    .result{margin-top:10px;padding:16px;border-radius:12px;border:1px solid var(--stroke);text-align:center;font-weight:900}
+    .result.ok{color:var(--ok); background:linear-gradient(180deg,#e9fbf4,#ffffff)}
+    .result.bad{color:var(--danger); background:linear-gradient(180deg,#ffecec,#ffffff)}
+
+    .actions-bar{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,.8),#fff);backdrop-filter:blur(6px);border-top:1px solid var(--stroke);display:flex;gap:10px;justify-content:flex-end;padding:12px 28px}
+    @media (max-width:1024px){.actions-bar{padding:12px 18px}}
+
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:8px 10px;border-radius:999px;border:1px solid var(--stroke);background:#fff;color:var(--muted);font-weight:700;font-size:12px}
+    .loading{position:relative}
+    .loading::after{content:"";position:absolute;right:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;border:3px solid #e3e7f2;border-top-color:#9aa7ff;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:translateY(-50%) rotate(1turn)}}
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">FHE</div>
+        <div>
+          <h1>Private Range Check</h1>
+          <p>Encrypted euint32 ∈ [lower, upper) → ebool</p>
+        </div>
+      </div>
+
+      <button id="btnConnect" class="btn primary block" style="margin-bottom:14px">Connect Wallet</button>
+
+      <div class="sidecard">
+        <h3>Contract</h3>
+        <div class="row-1">
+          <div>
+            <label>Address</label>
+            <input id="ctrAddr" type="text" readonly value="0x18dA71CFe1C627bd4A4Bcf2Fd70831963B485d68" />
+          </div>
+          <div>
+            <label>Version</label>
+            <input id="ctrVer" type="text" readonly placeholder="—" />
+          </div>
+        </div>
+      </div>
+
+      <div class="sidecard">
+        <h3>Bounds</h3>
+        <div class="row">
+          <div>
+            <label>lowerBound</label>
+            <input id="lowerBound" type="number" min="0" step="1" disabled />
+          </div>
+          <div>
+            <label>upperBound</label>
+            <input id="upperBound" type="number" min="1" step="1" disabled />
+          </div>
+        </div>
+        <button id="btnRefreshBounds" class="btn ghost block" style="margin-top:10px">Refresh bounds</button>
+      </div>
+
+      <div class="sidecard">
+        <h3>Last result</h3>
+        <div class="row-1">
+          <div>
+            <label>Last result handle</label>
+            <input id="lastHandle" type="text" readonly placeholder="0x…" />
+          </div>
+          <div>
+            <label>Decoded value</label>
+            <input id="lastDec" type="text" readonly placeholder="—" />
+          </div>
+        </div>
+      </div>
+
+      <div class="pill" id="netPill">Network: <b>Sepolia</b></div>
+    </aside>
+
+    <main class="content">
+      <div class="hero">
+        <div>
+          <h2 class="hero-title">Check membership</h2>
+          <p class="hero-sub">We encrypt your number and check it against public or custom bounds.</p>
+        </div>
+      </div>
+
+      <div class="panels">
+        <section class="panel">
+          <div class="tabs">
+            <button id="tabGlobal" class="tab active">Contract bounds</button>
+            <button id="tabCustom" class="tab">Custom bounds</button>
+          </div>
+
+          <div id="globalBox">
+            <p class="hero-sub" style="margin:6px 0 10px">Using on-chain bounds shown in the sidebar.</p>
+          </div>
+
+          <div id="customBox" style="display:none">
+            <div class="grid-2">
+              <div>
+                <label>Custom lower</label>
+                <input id="lowerCustom" type="number" min="0" step="1" />
+              </div>
+              <div>
+                <label>Custom upper</label>
+                <input id="upperCustom" type="number" min="1" step="1" />
+              </div>
+            </div>
+            <p class="hero-sub" style="margin-top:6px">Semantics: inclusive lower bound, exclusive upper bound.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="grid-2">
+            <div>
+              <label>Your number (uint32)</label>
+              <input id="inputValue" type="number" min="0" max="4294967295" step="1" />
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button id="btnCheck" class="btn accent block">🔒 Encrypt & Check</button>
+            </div>
+          </div>
+          <div class="status" id="status">Waiting for connection…</div>
+          <div class="result" id="result">—</div>
+        </section>
+      </div>
+
+      <div class="actions-bar">
+        <button id="btnDecrypt" class="btn primary" disabled>🔓 Decrypt (private)</button>
+        <button id="btnMakePublic" class="btn coral" disabled>🌍 Make last public</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Zama Relayer SDK (official) -->
+  <script type="module" crossorigin src="https://cdn.zama.ai/relayer-sdk-js/0.1.2/relayer-sdk-js.js"></script>
+  <!-- ethers v6 -->
+  <script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm"></script>
+
+  <script type="module">
+    import { BrowserProvider, Contract, getAddress } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
+    import { initSDK, createInstance, SepoliaConfig, generateKeypair } from "https://cdn.zama.ai/relayer-sdk-js/0.1.2/relayer-sdk-js.js";
+
+    // ---------- Utilities ----------
+    const $ = (id) => document.getElementById(id);
+    const CONTRACT_ADDRESS = "0x18dA71CFe1C627bd4A4Bcf2Fd70831963B485d68";
+    const RELAYER_URL = "https://relayer.testnet.zama.cloud";
+    const GATEWAY_URL = "https://gateway.sepolia.zama.ai/";
+
+    const abi = [
+      { inputs:[{name:"xExt",type:"bytes32"},{name:"proof",type:"bytes"}], name:"checkInRange", outputs:[{name:"inRangeCt",type:"bytes32"}], stateMutability:"nonpayable", type:"function" },
+      { inputs:[{name:"xExt",type:"bytes32"},{name:"lower",type:"uint32"},{name:"upper",type:"uint32"},{name:"proof",type:"bytes"}], name:"checkInRangeWithBounds", outputs:[{name:"inRangeCt",type:"bytes32"}], stateMutability:"nonpayable", type:"function" },
+      { inputs:[], name:"getLastResultHandle", outputs:[{type:"bytes32"}], stateMutability:"view", type:"function" },
+      { inputs:[], name:"lowerBound", outputs:[{type:"uint32"}], stateMutability:"view", type:"function" },
+      { inputs:[], name:"upperBound", outputs:[{type:"uint32"}], stateMutability:"view", type:"function" },
+      { inputs:[], name:"version", outputs:[{type:"string"}], stateMutability:"pure", type:"function" },
+      { inputs:[], name:"makeLastPublic", outputs:[], stateMutability:"nonpayable", type:"function" },
+      { anonymous:false, inputs:[{indexed:true,name:"user",type:"address"},{indexed:false,name:"lower",type:"uint32"},{indexed:false,name:"upper",type:"uint32"},{indexed:false,name:"resultHandle",type:"bytes32"}], name:"RangeChecked", type:"event"}
+    ];
+
+    // ---------- Verbose Logging Helpers ----------
+    const LOG = { SHOW_FULL_HEX: true, PREVIEW_BYTES: 256 };
+    let STEP=0; const log=(...args)=>{ const ts=new Date().toISOString(); console.debug(`[RangeUI #${++STEP}] ${ts}`, ...args); };
+    const group=(label)=>{ console.groupCollapsed(`%cRangeUI%c ${label}`, 'background:#5a7cff;color:#fff;padding:2px 6px;border-radius:6px','background:transparent;color:inherit'); return ()=>console.groupEnd(); };
+    const warn=(...a)=>console.warn('[RangeUI]',...a);
+    const err=(...a)=>console.error('[RangeUI]',...a);
+
+    const toHex = (x)=>{
+      if (x == null) return null;
+      if (typeof x === 'string') return x.startsWith('0x')? x : ('0x'+x);
+      if (x.buffer || Array.isArray(x) || x instanceof Uint8Array) return '0x' + Array.from(x).map(b=>b.toString(16).padStart(2,'0')).join('');
+      return String(x);
+    };
+    const bytesLen = (hex)=>{
+      if (!hex) return 0; const s = typeof hex==='string' ? hex : toHex(hex); const h = s.startsWith('0x')? s.slice(2): s; return Math.ceil(h.length/2);
+    };
+    const hexPreview = (hex, label='hex')=>{
+      const s = toHex(hex) || ''; const bl = bytesLen(s);
+      if (LOG.SHOW_FULL_HEX || bl <= LOG.PREVIEW_BYTES) { log(`${label} (${bl} bytes):`, s); return; }
+      const cut = LOG.PREVIEW_BYTES*2; log(`${label} (${bl} bytes, preview ${LOG.PREVIEW_BYTES}):`, '0x'+s.slice(2, 2+cut) + '…');
+    };
+    const table = (obj, title)=>{ try { console.table(obj, title); } catch { log(title||'table', obj); } };
+
+    function asBool(val){
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'bigint') return val !== 0n;
+      if (val === null || val === undefined) return false;
+      const s = String(val).toLowerCase().trim();
+      if (s === 'true') return true; if (s === 'false') return false; const n = Number(s); return !Number.isNaN(n) && n !== 0;
+    }
+
+    // ---------- State ----------
+    let provider, signer, account, relayer, contract;
+    let lastHandle = null; let lastDecrypted = null;
+
+    // ---------- DOM ----------
+    const btnConnect = $("btnConnect");
+    const btnRefreshBounds = $("btnRefreshBounds");
+    const btnCheck = $("btnCheck");
+    const btnDecrypt = $("btnDecrypt");
+    const btnMakePublic = $("btnMakePublic");
+
+    const statusEl = $("status");
+    const resultEl = $("result");
+    const ctrAddr = $("ctrAddr");
+    const ctrVer = $("ctrVer");
+    const lowerBoundEl = $("lowerBound");
+    const upperBoundEl = $("upperBound");
+    const lowerCustom = $("lowerCustom");
+    const upperCustom = $("upperCustom");
+    const inputValue = $("inputValue");
+    const lastHandleEl = $("lastHandle");
+    const lastDecEl = $("lastDec");
+
+    const tabGlobal = $("tabGlobal");
+    const tabCustom = $("tabCustom");
+    const globalBox = $("globalBox");
+    const customBox = $("customBox");
+
+    // ---------- UI helpers ----------
+    function setStatus(s){ statusEl.textContent = s; }
+    function setResult(type, text){ resultEl.className = 'result ' + (type||''); resultEl.textContent = text; }
+
+    // Tabs
+    tabGlobal.onclick = () => { tabGlobal.classList.add('active'); tabCustom.classList.remove('active'); globalBox.style.display='block'; customBox.style.display='none'; };
+    tabCustom.onclick = () => { tabCustom.classList.add('active'); tabGlobal.classList.remove('active'); globalBox.style.display='none'; customBox.style.display='block'; };
+
+    // ---------- Connect ----------
+    async function connect(){
+      const end = group('connect');
+      try{
+        btnConnect.classList.add('loading');
+        log('connect:start');
+        if(!window.ethereum) throw new Error('MetaMask not found');
+        const chainIdHex = await window.ethereum.request({ method:'eth_chainId' });
+        log('ethereum.chainId (hex):', chainIdHex);
+        await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId:'0xaa36a7' }] });
+
+        provider = new BrowserProvider(window.ethereum);
+        await provider.send('eth_requestAccounts', []);
+        signer = await provider.getSigner();
+        account = await signer.getAddress();
+        const net = await provider.getNetwork();
+        log('provider.getNetwork():', { chainId: String(net.chainId) });
+        const fee = await provider.getFeeData();
+        log('feeData:', { gasPrice:String(fee.gasPrice||''), maxFeePerGas:String(fee.maxFeePerGas||''), maxPriorityFeePerGas:String(fee.maxPriorityFeePerGas||'') });
+        if (net.chainId !== 11155111n) throw new Error('Please switch to Sepolia');
+
+        contract = new Contract(CONTRACT_ADDRESS, abi, signer);
+        await initSDK();
+        const cfg = { ...SepoliaConfig, network: window.ethereum, relayerUrl: RELAYER_URL, gatewayUrl: GATEWAY_URL, debug: true };
+        relayer = await createInstance(cfg);
+        log('relayer instance created with config:', { chainId: cfg.chainId, kms: cfg.kmsContractAddress, acl: cfg.aclContractAddress, relayerUrl: cfg.relayerUrl, gatewayUrl: cfg.gatewayUrl });
+
+        btnConnect.disabled = true; btnConnect.textContent = `Connected · ${account.slice(0,6)}…${account.slice(-4)}`;
+        setStatus('Connected. Ready.');
+        ctrAddr.value = CONTRACT_ADDRESS;
+
+        await refreshBounds();
+        try { const v = await contract.version(); ctrVer.value = v; log('contract.version():', v); } catch(e){ warn('version() failed:', e?.message); }
+
+        contract.on('RangeChecked', (user, lower, upper, handle) => {
+          const endEv = group('event RangeChecked');
+          log('args:', { user, lower: Number(lower), upper: Number(upper) });
+          hexPreview(handle, 'resultHandle');
+          if (String(user).toLowerCase() === String(account).toLowerCase()) {
+            lastHandle = handle; lastHandleEl.value = handle; btnDecrypt.disabled = false; btnMakePublic.disabled = false;
+          }
+          endEv();
+        });
+      }catch(e){ setStatus('❌ ' + (e?.message||e)); err('connect:error', e); }
+      finally{ btnConnect.classList.remove('loading'); end(); }
+    }
+
+    async function refreshBounds(){
+      const end = group('refreshBounds');
+      try{
+        btnRefreshBounds.classList.add('loading');
+        const [lo, up] = await Promise.all([contract.lowerBound(), contract.upperBound()]);
+        lowerBoundEl.value = Number(lo);
+        upperBoundEl.value = Number(up);
+        setStatus(`Bounds: [${Number(lo)}, ${Number(up)})`);
+        log('bounds fetched:', { lower:Number(lo), upper:Number(up) });
+      }catch(e){ setStatus('❌ Cannot read bounds: ' + e.message); err('refreshBounds:error', e); }
+      finally{ btnRefreshBounds.classList.remove('loading'); end(); }
+    }
+
+    // ---------- Check ----------
+    async function doCheck(){
+      const end = group('doCheck');
+      try{
+        btnCheck.classList.add('loading'); btnDecrypt.disabled = true; btnMakePublic.disabled = true; lastHandle = null; lastHandleEl.value = ''; lastDecEl.value = '';
+        setResult('', '—');
+
+        const val = Number(inputValue.value);
+        log('input value (uint32):', val);
+        if (!Number.isInteger(val) || val < 0 || val > 0xffffffff) throw new Error('Enter 0..2^32-1');
+
+        const endEnc = group('encrypt');
+        const buf = relayer.createEncryptedInput(getAddress(CONTRACT_ADDRESS), getAddress(account));
+        log('createEncryptedInput(contract,user)');
+        buf.add32(val);
+        log('add32:', val);
+        const { handles, inputProof } = await buf.encrypt();
+        log('encrypt() returned ->', { handlesType: Array.isArray(handles)? 'array':'?', proofType: typeof inputProof });
+        handles.forEach((h, i)=> hexPreview(h, `handle[${i}]`));
+        hexPreview(inputProof, 'proof');
+        const xExt = toHex(handles[0]);
+        const proof = toHex(inputProof);
+        endEnc();
+
+        let tx;
+        const endSend = group('sendTx');
+        if (tabGlobal.classList.contains('active')){
+          log('calling checkInRange(xExt, proof)');
+          tx = await contract.checkInRange(xExt, proof, { gasLimit: 1_800_000 });
+        } else {
+          const lo = Number(lowerCustom.value), up = Number(upperCustom.value);
+          log('custom bounds:', { lower:lo, upper:up });
+          if (!Number.isInteger(lo) || !Number.isInteger(up) || !(0 <= lo && lo < up && up <= 0xffffffff)) throw new Error('Bad custom bounds');
+          tx = await contract.checkInRangeWithBounds(xExt, lo, up, proof, { gasLimit: 2_000_000 });
+        }
+        table({ hash: tx.hash, to: tx.to, from: tx.from, nonce: tx.nonce, gasLimit: String(tx.gasLimit), gasPrice: String(tx.gasPrice||''), maxFeePerGas: String(tx.maxFeePerGas||''), maxPriorityFeePerGas: String(tx.maxPriorityFeePerGas||''), chainId: String(tx.chainId), type: tx.type }, 'tx');
+        endSend();
+
+        const endRcpt = group('receipt');
+        const receipt = await tx.wait();
+        table({ blockNumber: receipt.blockNumber, status: receipt.status, gasUsed: String(receipt.gasUsed), cumulativeGasUsed: String(receipt.cumulativeGasUsed), effectiveGasPrice: String(receipt.effectiveGasPrice||''), logs: receipt.logs?.length||0, transactionIndex: receipt.transactionIndex }, 'receipt');
+        endRcpt();
+
+        const endEv = group('events');
+        let handle = null;
+        for (const [idx, lg] of receipt.logs.entries()) {
+          try{
+            const parsed = contract.interface.parseLog(lg);
+            log(`log[${idx}] name:`, parsed?.name);
+            if (parsed?.name === 'RangeChecked') {
+              table(parsed.args, 'RangeChecked.args');
+              handle = parsed.args.resultHandle;
+              hexPreview(handle, 'event.resultHandle');
+            }
+          }catch(e){ /* ignore non-matching logs */ }
+        }
+        endEv();
+
+        if (!handle){ log('event not parsed, fallback to getLastResultHandle()'); handle = await contract.getLastResultHandle(); }
+        lastHandle = handle; lastHandleEl.value = handle; btnDecrypt.disabled = false; btnMakePublic.disabled = false;
+        setStatus('Done. You can now decrypt.');
+        hexPreview(handle, 'result handle (final)');
+      }catch(e){ setStatus('❌ ' + (e?.message||e)); err('doCheck:error', e); }
+      finally{ btnCheck.classList.remove('loading'); end(); }
+    }
+
+    // ---------- Decrypt privately ----------
+    async function decryptPrivate(){
+      const end = group('decryptPrivate');
+      try{
+        if (!lastHandle) throw new Error('No handle yet. Run a check first.');
+        btnDecrypt.classList.add('loading');
+
+        const endEip = group('eip712');
+        const kp = await generateKeypair();
+        log('generated keypair bytes:', { pub: kp.publicKey?.length, priv: kp.privateKey?.length });
+        const startTs = Math.floor(Date.now()/1000).toString();
+        const days = '7';
+        const eip712 = relayer.createEIP712(kp.publicKey, [CONTRACT_ADDRESS], startTs, days);
+        table(eip712.domain, 'eip712.domain');
+        table(eip712.message, 'eip712.message');
+        const sig = await signer.signTypedData(eip712.domain, { UserDecryptRequestVerification: eip712.types.UserDecryptRequestVerification }, eip712.message);
+        hexPreview(sig, 'eip712.signature');
+        endEip();
+
+        const endDec = group('userDecrypt');
+        const pairs = [{ handle: lastHandle, contractAddress: CONTRACT_ADDRESS }];
+        log('pairs:', pairs);
+        const out = await relayer.userDecrypt(pairs, kp.privateKey, kp.publicKey, sig.replace('0x',''), [CONTRACT_ADDRESS], account, startTs, days);
+        log('userDecrypt result keys:', Object.keys(out||{}));
+        const vRaw = out[lastHandle] ?? out[String(lastHandle)];
+        log('raw decrypted value:', vRaw, 'typeof=', typeof vRaw);
+        const ok = asBool(vRaw);
+        endDec();
+
+        lastDecrypted = ok;
+        lastDecEl.value = ok ? 'true' : 'false';
+        setResult(ok ? 'ok' : 'bad', ok ? '✅ IN RANGE' : '❌ OUT OF RANGE');
+        setStatus('Decrypted successfully.');
+      }catch(e){ setStatus('❌ Decrypt failed: ' + (e?.message||e)); err('decryptPrivate:error', e); }
+      finally{ btnDecrypt.classList.remove('loading'); end(); }
+    }
+
+    // ---------- Make last public ----------
+    async function makePublic(){
+      const end = group('makePublic');
+      try{
+        if (!contract) throw new Error('Connect first');
+        btnMakePublic.classList.add('loading');
+        log('sending makeLastPublic');
+        const tx = await contract.makeLastPublic({ gasLimit: 200_000 });
+        table({ hash: tx.hash, nonce: tx.nonce, gasLimit: String(tx.gasLimit) }, 'tx makeLastPublic');
+        const rcpt = await tx.wait();
+        table({ blockNumber: rcpt.blockNumber, status: rcpt.status, gasUsed: String(rcpt.gasUsed) }, 'receipt makeLastPublic');
+        setStatus('Last result marked public. Use publicDecrypt on the handle.');
+      }catch(e){ setStatus('❌ makePublic failed: ' + (e?.message||e)); err('makePublic:error', e); }
+      finally{ btnMakePublic.classList.remove('loading'); end(); }
+    }
+
+    // ---------- Wire up ----------
+    btnConnect.onclick = connect;
+    btnRefreshBounds.onclick = refreshBounds;
+    btnCheck.onclick = doCheck;
+    btnDecrypt.onclick = decryptPrivate;
+    btnMakePublic.onclick = makePublic;
+
+    // UX nicety: Enter to submit
+    inputValue.addEventListener('keydown', (e) => { if (e.key === 'Enter') btnCheck.click(); });
+  </script>
+</body>
+</html>
